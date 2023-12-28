@@ -1,20 +1,29 @@
+import React from 'react';
+import { ScrollView, StyleSheet, useColorScheme, Text, View, SafeAreaView, Dimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import FormScreen from './src/screens/form-screen';
+
+const { width, height } = Dimensions.get('window');
+
 
 export default function App() {
+  const colorScheme = useColorScheme();
+  const backgroundColor = colorScheme === 'dark' ? '#464646' : '#f2f2f2';
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <SafeAreaView style={[styles.container, { backgroundColor }]}>
+      <StatusBar style="dark" />
+      <ScrollView>
+        <FormScreen />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingTop: 70,
+    height: height
   },
 });
