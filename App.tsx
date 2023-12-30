@@ -1,6 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet, useColorScheme, Text, View, SafeAreaView, Dimensions } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
+import { useColorScheme, Dimensions, SafeAreaView, StatusBar } from 'react-native';
 import FormScreen from './src/screens/form-screen';
 
 const { width, height } = Dimensions.get('window');
@@ -11,19 +10,10 @@ export default function App() {
   const backgroundColor = colorScheme === 'dark' ? '#464646' : '#f2f2f2';
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor }]}>
-      <StatusBar style="dark" translucent={false} hidden={true} />
-      <ScrollView>
-        <FormScreen />
-      </ScrollView>
+    <SafeAreaView style={{ backgroundColor: "#f2f2f2", height: height, }}>
+      <StatusBar />
+      <FormScreen />
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    width: width,
-    height: height
-  },
-});
