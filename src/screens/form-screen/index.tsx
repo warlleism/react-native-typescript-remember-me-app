@@ -1,17 +1,14 @@
-import { useState, useEffect } from 'react';
-import { StyleSheet, Button, Image, TextInput, View, Text, Alert, Dimensions, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, Image, TextInput, View, Text, Alert, Dimensions, TouchableOpacity, Animated, ScrollView } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faSuitcaseMedical, faStarOfLife, faImage, faCamera, faXmark } from '@fortawesome/free-solid-svg-icons';
-import { Modal } from 'react-native';
+import { faStarOfLife, faImage, faCamera, faTrash, faImages } from '@fortawesome/free-solid-svg-icons';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { RenderData } from '../render-data';
+import { Medicamento } from '../../interfaces/IMedicamentos';
 
-interface Medicamento {
-    id: string;
-    nome: string;
-    funcao: string;
-    imagem: string | null;
-}
 const { width, height } = Dimensions.get('window');
 
 const generateUniqueId = (): string => {
@@ -19,17 +16,13 @@ const generateUniqueId = (): string => {
 };
 
 export default function FormScreen() {
-
-    const [medicamento, setMedicamento] = useState<Medicamento>({
-        id: generateUniqueId(),
-        nome: '',
-        funcao: '',
-        imagem: null,
-    });
+    const [content, setContent] = useState<Medicamento>({ id: generateUniqueId(), nome: '', funcao: '', imagem: null, date: '' });
     const [isEditing, setIsEditing] = useState(false);
-
+    const [contentSalvos, setContentSalvos] = useState<Medicamento[]>([]);
     const [modalVisible, setModalVisible] = useState(false);
     const [modaImage, setModaImage] = useState<string | null>(null);
+    const [renderDataVisible, setRenderDataVisible] = useState(false);
+    const fadeAnim = useRef(new Animated.Value(0)).current;
 
     const openModal = () => {
         setModalVisible(true);
@@ -41,10 +34,8 @@ export default function FormScreen() {
     };
 
     const isSalvarButtonDisabled = () => {
-        return !medicamento.nome || !medicamento.funcao || !medicamento.imagem;
+        return !content.nome || !content.funcao || !content.imagem;
     };
-
-    const [medicamentosSalvos, setMedicamentosSalvos] = useState<Medicamento[]>([]);
 
     useEffect(() => {
         loadMedicamentos();
@@ -54,7 +45,7 @@ export default function FormScreen() {
         try {
             const savedMedicamentos = await AsyncStorage.getItem('medicamentos');
             if (savedMedicamentos) {
-                setMedicamentosSalvos(JSON.parse(savedMedicamentos));
+                setContentSalvos(JSON.parse(savedMedicamentos));
             }
         } catch (error) {
             console.error('Erro ao carregar medicamentos:', error);
@@ -64,7 +55,7 @@ export default function FormScreen() {
     const saveMedicamentos = async (novosMedicamentos: Medicamento[]) => {
         try {
             await AsyncStorage.setItem('medicamentos', JSON.stringify(novosMedicamentos));
-            setMedicamentosSalvos(novosMedicamentos);
+            setContentSalvos(novosMedicamentos);
         } catch (error) {
             console.error('Erro ao salvar medicamentos:', error);
         }
@@ -80,63 +71,57 @@ export default function FormScreen() {
                 quality: 1,
             });
         } else {
-            result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.All,
-                allowsEditing: true,
-                aspect: [4, 3],
-                quality: 1,
-            });
+            result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.All, allowsEditing: true, aspect: [4, 3], quality: 1 });
         }
-
         if (!result.canceled) {
-            setMedicamento({ ...medicamento, imagem: result.assets && result.assets[0]?.uri });
+            setContent({ ...content, imagem: result.assets && result.assets[0]?.uri });
         }
     };
 
     const handleNomeChange = (text: string) => {
-        setMedicamento({ ...medicamento, nome: text });
+        setContent({ ...content, nome: text });
     };
 
     const handleFuncaoChange = (text: string) => {
-        setMedicamento({ ...medicamento, funcao: text });
+        setContent({ ...content, funcao: text });
     };
 
     const handleSubmit = async () => {
-        const novoMedicamento = { ...medicamento, id: generateUniqueId() };
+        const currentDate = new Date();
+        const formattedDate = format(currentDate, "dd/MM/yyyy HH:mm", { locale: ptBR });
+        const novoMedicamento = { ...content, id: generateUniqueId(), date: isEditing ? content.date : formattedDate };
+
         let novosMedicamentos;
 
         if (isEditing) {
-            novosMedicamentos = medicamentosSalvos.map((med) =>
-                med.id === medicamento.id ? { ...medicamento } : med
+            novosMedicamentos = contentSalvos.map((med) =>
+                med.id === content.id ? { ...novoMedicamento } : med
             );
         } else {
-            novosMedicamentos = [...medicamentosSalvos, novoMedicamento];
+            novosMedicamentos = [...contentSalvos, novoMedicamento];
         }
 
         await saveMedicamentos(novosMedicamentos);
-        setMedicamento({ id: generateUniqueId(), nome: '', funcao: '', imagem: null });
+        setContent({
+            id: generateUniqueId(), nome: '', funcao: '', imagem: null, date: ''
+        });
         setIsEditing(false);
     };
 
     const handleEdit = (data: Medicamento) => {
-        setMedicamento(data);
+        setContent(data);
         setIsEditing(true);
     };
 
     const handleCancelEdit = () => {
-        setMedicamento({
-            id: generateUniqueId(),
-            nome: '',
-            funcao: '',
-            imagem: null,
-        });
+        setContent({ id: generateUniqueId(), nome: '', funcao: '', imagem: null, date: '' });
         setIsEditing(false);
     };
 
     const handleExcluirMedicamento = async (id: string) => {
         Alert.alert(
             'Confirmação',
-            'Tem certeza que deseja excluir este medicamento?',
+            'Tem certeza que deseja excluir este content?',
             [
                 {
                     text: 'Cancelar',
@@ -146,10 +131,10 @@ export default function FormScreen() {
                     text: 'Confirmar',
                     onPress: async () => {
                         try {
-                            const medicamentosAtualizados = medicamentosSalvos.filter(med => med.id !== id);
+                            const medicamentosAtualizados = contentSalvos.filter(med => med.id !== id);
                             await saveMedicamentos(medicamentosAtualizados);
                         } catch (error) {
-                            console.error('Erro ao excluir medicamento:', error);
+                            console.error('Erro ao excluir content:', error);
                         }
                     },
                 },
@@ -158,31 +143,68 @@ export default function FormScreen() {
         );
     };
 
+    const showRenderData = () => {
+        setRenderDataVisible(true);
+
+        Animated.timing(
+            fadeAnim,
+            {
+                toValue: 1,
+                duration: 500,
+                useNativeDriver: false,
+            }
+        ).start();
+    };
+
+    const hideRenderData = () => {
+        Animated.timing(
+            fadeAnim,
+            {
+                toValue: 0,
+                duration: 0,
+                useNativeDriver: false,
+            }
+        ).start(() => setRenderDataVisible(false));
+    };
+
     return (
-        <View style={{ flex: 1, gap: 20, marginBottom: 30, flexDirection: 'column', alignItems: 'center', width: width }}>
-            <View style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 30 }}>
-                <View style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 8, backgroundColor: "#c2ffed77", borderRadius: 100 }}>
-                    <FontAwesomeIcon icon={faStarOfLife} size={50} color="#00ffb3" />
+        <View style={{ flex: 1, flexDirection: 'column', position: 'relative', alignItems: 'center', height: height, width: width }}>
+            <View style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 30, marginTop: 30 }}>
+                <View style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 8, borderRadius: 100 }}>
+                    <FontAwesomeIcon icon={faStarOfLife} size={50} color="#6200ff" />
                 </View>
                 <View style={{ display: 'flex', flexDirection: 'row' }}>
                     <Text style={{ fontSize: 30, fontWeight: '800', color: "#3e3e3e" }}>Snap</Text>
-                    <Text style={{ fontSize: 30, fontWeight: '800', color: "#00f7ad" }}>Info</Text>
+                    <Text style={{ fontSize: 30, fontWeight: '800', color: "#6200ff" }}>Info</Text>
                 </View>
             </View>
-            {medicamento.imagem && <Image source={{ uri: medicamento.imagem }} style={{ width: width - 50, height: 200, borderRadius: 5 }} />}
+            {content.imagem &&
+                <View style={{ position: "relative" }}>
+                    <Image source={{ uri: content.imagem }} style={{ width: width - 50, height: 300, borderRadius: 5, marginBottom: 30 }} />
+                    <TouchableOpacity style={{ position: "absolute", top: 10, right: 10 }} onPress={() => setContent({ ...content, imagem: '' })}>
+                        <FontAwesomeIcon icon={faTrash} size={20} color='#ff004ccc' />
+                    </TouchableOpacity>
 
-            <TextInput
-                style={styles.input}
-                placeholder="Nome do Medicamento"
-                value={medicamento.nome}
-                onChangeText={handleNomeChange}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Função do Medicamento"
-                value={medicamento.funcao}
-                onChangeText={handleFuncaoChange}
-            />
+                </View>
+            }
+            <View style={{ marginBottom: 20 }}>
+                <Text style={{ marginBottom: 5 }}>Nome da foto</Text>
+                <TextInput
+                    style={styles.input}
+                    value={content.nome}
+                    onChangeText={handleNomeChange}
+                />
+            </View>
+            <View style={{ marginBottom: 20 }}>
+                <Text style={{ marginBottom: 5 }}>Descrição</Text>
+                <TextInput
+                    style={styles.input}
+                    multiline={true}
+                    defaultValue={content.funcao}
+                    onChangeText={handleFuncaoChange}
+                />
+            </View>
+
             <TouchableOpacity style={styles.button} onPress={() => pickImage(false)}>
                 <FontAwesomeIcon size={30} color='#fff' icon={faImage} />
                 <Text style={{ fontSize: 20, fontWeight: '800', color: "#fff" }}>Escolher uma imagem</Text>
@@ -191,69 +213,46 @@ export default function FormScreen() {
                 <FontAwesomeIcon size={30} color='#fff' icon={faCamera} />
                 <Text style={{ fontSize: 20, fontWeight: '800', color: "#ffffff" }}>Tirar uma foto</Text>
             </TouchableOpacity>
-            <TouchableOpacity disabled={isSalvarButtonDisabled()} style={[styles.button, { backgroundColor: isSalvarButtonDisabled() ? '#03a79433' : '#03a793' }]} onPress={handleSubmit}>
+            <TouchableOpacity
+                disabled={isSalvarButtonDisabled()}
+                style={[
+                    styles.button,
+                    { backgroundColor: '#6200ff', opacity: isSalvarButtonDisabled() ? 0.7 : 1 }
+                ]}
+                onPress={handleSubmit}
+            >
                 <Text style={{ fontSize: 20, fontWeight: '800', color: "#ffffff" }}>{isEditing ? 'Editar' : 'Salvar'}</Text>
             </TouchableOpacity>
             {
                 isEditing && (
-                    <TouchableOpacity style={[styles.button, { backgroundColor: '#03a793' }]} onPress={handleCancelEdit}>
+                    <TouchableOpacity style={[styles.button, { backgroundColor: '#6200ff' }]} onPress={handleCancelEdit}>
                         <Text style={{ fontSize: 20, fontWeight: '800', color: "#ffffff" }}>Cancelar</Text>
                     </TouchableOpacity>
                 )
             }
-            <Text style={{ marginTop: 20, fontSize: 18, fontWeight: 'bold' }}>Medicamentos Salvos:</Text>
-            {medicamentosSalvos.length === 0 ? (
-                <>
-                    <FontAwesomeIcon icon={faSuitcaseMedical} size={30} color="#808080" />
-                    <Text style={{ fontSize: 16, marginTop: 10 }}>Nenhum medicamento cadastrado ainda.</Text>
-                </>
-            ) : (
-                medicamentosSalvos.map((med, index) => (
-                    <View key={index} style={styles.containerContent} >
-                        {med.imagem && (
-                            <>
-                                <TouchableOpacity onPress={() => {
-                                    setModaImage(med.imagem)
-                                    openModal()
-                                }
-                                }>
-                                    <Image source={{ uri: med.imagem }} style={{ width: 250, height: 200, borderRadius: 5 }} />
-                                </TouchableOpacity>
-                                <Modal
-                                    visible={modalVisible}
-                                    transparent={true}
-                                    onRequestClose={closeModal}
-                                >
-                                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.8)' }}>
-                                        <TouchableOpacity style={{ position: 'absolute', top: 20, right: 20, padding: 10, backgroundColor: "#ffffff24", borderRadius: 100 }} onPress={closeModal}>
-                                            <FontAwesomeIcon icon={faXmark} size={30} color='#fff' />
-                                        </TouchableOpacity>
-                                        <Image source={{ uri: modaImage }} style={{ width: '95%', height: 300, borderRadius: 5 }} />
-                                    </View>
-                                </Modal>
-                            </>
-                        )}
-                        <Text style={{ fontSize: 25, fontWeight: '300', color: "#444444" }}>{`Nome: ${med.nome}`}</Text>
-                        <Text style={{ fontSize: 25, fontWeight: '300', color: "#444444" }}>{`Função: ${med.funcao}`}</Text>
-                        <View style={{ position: 'absolute', top: 10, right: 10, gap: 5 }}>
-                            <TouchableOpacity
-                                onPress={() => handleEdit(med)}>
-                                <Text style={{ fontSize: 15, fontWeight: '400', color: "#444444" }}>EDITAR</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={() => handleExcluirMedicamento(med.id)}>
-                                <Text style={{ fontSize: 15, fontWeight: '400', color: "#ff0000" }}>APAGAR</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                ))
+
+            <TouchableOpacity style={{ borderRadius: 100, backgroundColor: '#6200ff', borderColor: '#4500b4', borderWidth: 2, padding: 15, position: 'absolute', top: 30, right: 20 }} onPress={renderDataVisible ? hideRenderData : showRenderData}>
+                <FontAwesomeIcon size={25} color='#fff' icon={faImages} />
+            </TouchableOpacity>
+
+            {renderDataVisible && (
+                <Animated.View style={{ backgroundColor: "#f2f2f2", opacity: fadeAnim, position: 'absolute', top: 0, height: '100%', width: width }}>
+                    <RenderData
+                        onPress={renderDataVisible ? hideRenderData : showRenderData}
+                        contentSalvos={contentSalvos ? contentSalvos : []}
+                        setModaImage={setModaImage}
+                        openModal={openModal}
+                        modalVisible={modalVisible}
+                        closeModal={closeModal}
+                        modaImage={modaImage}
+                        handleEdit={handleEdit}
+                        handleExcluirMedicamento={handleExcluirMedicamento}
+                    />
+                </Animated.View>
             )}
-
-
         </View>
     );
 }
-
 const styles = StyleSheet.create({
     input: {
         height: 60,
@@ -267,23 +266,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: 12,
         width: width - 50,
-        backgroundColor: '#00f7ad',
+        backgroundColor: '#6200ff',
         color: '#161616',
         justifyContent: 'center',
         alignItems: 'center',
         padding: 20,
+        marginBottom: 10,
         borderRadius: 5,
     },
-    containerContent: {
-        padding: 10,
-        position: 'relative',
-        width: width - 50,
-        backgroundColor: '#fff',
-        borderRadius: 5,
-        shadowColor: '#0000009a',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 5,
-    }
 });

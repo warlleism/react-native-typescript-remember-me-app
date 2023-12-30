@@ -12,7 +12,7 @@ export default function App() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor }]}>
-      <StatusBar style="dark" />
+      <StatusBar style="dark" translucent={false} hidden={true} />
       <ScrollView>
         <FormScreen />
       </ScrollView>
@@ -23,7 +23,7 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 70,
+    width: width,
     height: height
   },
 });
