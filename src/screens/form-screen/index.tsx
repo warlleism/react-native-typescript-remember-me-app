@@ -47,7 +47,7 @@ export default function FormScreen() {
                 setContentSalvos(JSON.parse(savedMedicamentos));
             }
         } catch (error) {
-            console.error('Erro ao carregar medicamentos:', error);
+            return
         }
     };
 
@@ -58,7 +58,7 @@ export default function FormScreen() {
             await AsyncStorage.setItem('photos', JSON.stringify(novosMedicamentos));
             setContentSalvos(novosMedicamentos);
         } catch (error) {
-            console.error('Erro ao salvar photo:', error);
+            return
         }
     };
 
@@ -67,15 +67,15 @@ export default function FormScreen() {
         if (isCamera) {
             result = await ImagePicker.launchCameraAsync({
                 mediaTypes: ImagePicker.MediaTypeOptions.All,
-                allowsEditing: false,
-                aspect: [4, 3],
+                allowsEditing: true,
+                aspect: [3, 4],
                 quality: 1,
             });
         } else {
             result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ImagePicker.MediaTypeOptions.All,
-                allowsEditing: false,
-                aspect: [4, 3],
+                allowsEditing: true,
+                aspect: [3, 4],
                 quality: 1,
             });
         }
@@ -143,7 +143,7 @@ export default function FormScreen() {
                             const medicamentosAtualizados = contentSalvos.filter(med => med.id !== id);
                             await savePhotos(medicamentosAtualizados);
                         } catch (error) {
-                            console.error('Erro ao excluir content:', error);
+                            return
                         }
                     },
                 },
@@ -161,7 +161,6 @@ export default function FormScreen() {
     };
 
     return (
-
         <>
             {renderDataVisible ?
                 <View>
@@ -185,7 +184,7 @@ export default function FormScreen() {
                 <ScrollView>
                     <View>
                         <View style={{ justifyContent: 'center', alignItems: 'center', width: width, marginBottom: 30, }}>
-                            <TouchableOpacity style={{ borderRadius: 100, backgroundColor: '#6200ff', borderColor: '#4500b4', borderWidth: 2, padding: 15, position: 'absolute', top: 20, right: 10 }} onPress={renderDataVisible ? hideRenderData : showRenderData}>
+                            <TouchableOpacity style={{ borderRadius: 10, backgroundColor: '#6200ff', borderColor: '#4500b4', borderWidth: 2, padding: 15, position: 'absolute', top: 20, right: 10 }} onPress={renderDataVisible ? hideRenderData : showRenderData}>
                                 <FontAwesomeIcon size={25} color='#fff' icon={faImages} />
                             </TouchableOpacity>
                             <View style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 50, marginTop: 20 }}>
@@ -198,14 +197,17 @@ export default function FormScreen() {
                                 </View>
                             </View>
                             <View>
-                                {content.imagem &&
-                                    <View style={{ position: "relative" }}>
+                                {content.imagem ?
+                                    <View>
                                         <Image source={{ uri: content.imagem }} style={{ width: width - 50, height: 300, borderRadius: 5, marginBottom: 30 }} />
                                         <TouchableOpacity style={{ position: "absolute", top: 10, right: 10 }} onPress={() => setContent({ ...content, imagem: '' })}>
                                             <FontAwesomeIcon icon={faTrash} size={20} color='#ff004ccc' />
                                         </TouchableOpacity>
-
                                     </View>
+                                    :
+                                    <TouchableOpacity onPress={() => pickImage(false)} style={{ backgroundColor: "#dfdfdff4", width: width - 50, height: 300, borderRadius: 5, marginBottom: 30, justifyContent: 'center', alignItems: 'center' }}>
+                                        <FontAwesomeIcon size={120} color='#c2c1c4' icon={faCamera} />
+                                    </TouchableOpacity>
                                 }
                                 <View style={{ marginBottom: 20 }}>
                                     <Text style={{ marginBottom: 5 }}>Nome da foto</Text>
@@ -225,12 +227,12 @@ export default function FormScreen() {
                                     />
                                 </View>
                                 <TouchableOpacity style={styles.button} onPress={() => pickImage(false)}>
-                                    <FontAwesomeIcon size={30} color='#fff' icon={faImage} />
-                                    <Text style={{ fontSize: 20, fontWeight: '800', color: "#fff" }}>Escolher uma imagem</Text>
+                                    <FontAwesomeIcon size={30} color='#6200ff' icon={faImage} />
+                                    <Text style={{ fontSize: 20, fontWeight: '800', color: '#6200ff' }}>Escolher uma imagem</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity style={styles.button} onPress={() => pickImage(true)}>
-                                    <FontAwesomeIcon size={30} color='#fff' icon={faCamera} />
-                                    <Text style={{ fontSize: 20, fontWeight: '800', color: "#ffffff" }}>Tirar uma foto</Text>
+                                    <FontAwesomeIcon size={30} color='#6200ff' icon={faCamera} />
+                                    <Text style={{ fontSize: 20, fontWeight: '800', color: '#6200ff' }}>Tirar uma foto</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     disabled={isSalvarButtonDisabled()}
@@ -272,7 +274,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: 12,
         width: width - 50,
-        backgroundColor: '#6200ff',
+        borderWidth: 2,
+        borderColor: '#6200ff',
         color: '#161616',
         justifyContent: 'center',
         alignItems: 'center',
