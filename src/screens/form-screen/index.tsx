@@ -42,7 +42,7 @@ export default function FormScreen() {
 
     const loadMedicamentos = async () => {
         try {
-            const savedMedicamentos = await AsyncStorage.getItem('medicamentos');
+            const savedMedicamentos = await AsyncStorage.getItem('photos');
             if (savedMedicamentos) {
                 setContentSalvos(JSON.parse(savedMedicamentos));
             }
@@ -51,14 +51,14 @@ export default function FormScreen() {
         }
     };
 
-
-
-    const saveMedicamentos = async (novosMedicamentos: Medicamento[]) => {
+    const savePhotos = async (novosMedicamentos: Medicamento[]) => {
         try {
-            await AsyncStorage.setItem('medicamentos', JSON.stringify(novosMedicamentos));
+            novosMedicamentos.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+            await AsyncStorage.setItem('photos', JSON.stringify(novosMedicamentos));
             setContentSalvos(novosMedicamentos);
         } catch (error) {
-            console.error('Erro ao salvar medicamentos:', error);
+            console.error('Erro ao salvar photo:', error);
         }
     };
 
@@ -67,17 +67,23 @@ export default function FormScreen() {
         if (isCamera) {
             result = await ImagePicker.launchCameraAsync({
                 mediaTypes: ImagePicker.MediaTypeOptions.All,
-                allowsEditing: true,
+                allowsEditing: false,
                 aspect: [4, 3],
                 quality: 1,
             });
         } else {
-            result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.All, allowsEditing: true, aspect: [4, 3], quality: 1 });
+            result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.All,
+                allowsEditing: false,
+                aspect: [4, 3],
+                quality: 1,
+            });
         }
         if (!result.canceled) {
             setContent({ ...content, imagem: result.assets && result.assets[0]?.uri });
         }
     };
+
 
     const handleNomeChange = (text: string) => {
         setContent({ ...content, nome: text });
@@ -102,7 +108,7 @@ export default function FormScreen() {
             novosMedicamentos = [...contentSalvos, novoMedicamento];
         }
 
-        await saveMedicamentos(novosMedicamentos);
+        await savePhotos(novosMedicamentos);
         setContent({
             id: generateUniqueId(), nome: '', funcao: '', imagem: null, date: ''
         });
@@ -135,7 +141,7 @@ export default function FormScreen() {
                     onPress: async () => {
                         try {
                             const medicamentosAtualizados = contentSalvos.filter(med => med.id !== id);
-                            await saveMedicamentos(medicamentosAtualizados);
+                            await savePhotos(medicamentosAtualizados);
                         } catch (error) {
                             console.error('Erro ao excluir content:', error);
                         }

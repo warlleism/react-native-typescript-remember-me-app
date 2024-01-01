@@ -1,10 +1,9 @@
-import { Image, View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView, TextInput } from 'react-native';
+import React, { useState } from 'react';
+import { Image, View, Text, TouchableOpacity, StyleSheet, Dimensions, TextInput, Modal } from 'react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faSuitcaseMedical, faXmark, faArrowLeft, faStarOfLife, faEllipsisVertical, faPenToSquare, faTrashCan } from '@fortawesome/free-solid-svg-icons';
-import { Modal } from 'react-native';
-import { Medicamento } from '../../interfaces/IMedicamentos'
-import { useState } from 'react';
+import { faSuitcaseMedical, faXmark, faArrowLeft, faStarOfLife, faPenToSquare, faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import { Picker } from '@react-native-picker/picker';
+import { Medicamento } from '../../interfaces/IMedicamentos';
 
 const { width, height } = Dimensions.get('window');
 
@@ -31,8 +30,23 @@ export const RenderData: React.FC<RenderDataProps> = ({
     handleEdit,
     handleExcluirMedicamento,
 }) => {
+    const [selectedMonth, setSelectedMonth] = useState<string>('null');
+    const [searchText, setSearchText] = useState<string>('');
 
-    const [selectedMonth, setSelectedMonth] = useState<string>();
+    const handleSearchChange = (text: string) => {
+        setSearchText(text);
+    };
+
+    const filteredContent =
+        selectedMonth === 'null'
+            ? contentSalvos.filter(item => item.nome.toLowerCase().includes(searchText.toLowerCase()))
+            : contentSalvos.filter(item =>
+                item.nome.toLowerCase().includes(searchText.toLowerCase()) &&
+                item.date.slice(3, 5) === selectedMonth
+            );
+
+    console.log(filteredContent)
+
     return (
         <View style={{ paddingHorizontal: 10 }}>
             <View style={{ height: 100, width: width, display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 10, marginBottom: 10 }}>
@@ -46,6 +60,8 @@ export const RenderData: React.FC<RenderDataProps> = ({
             </View>
             <View style={{ alignSelf: 'center', width: "100%", flexDirection: 'row', justifyContent: "space-between", marginBottom: 20 }}>
                 <TextInput
+                    onChangeText={handleSearchChange}
+                    value={searchText}
                     placeholder='Buscar'
                     style={{
                         width: '64%',
@@ -63,55 +79,58 @@ export const RenderData: React.FC<RenderDataProps> = ({
                         onValueChange={(itemValue, itemIndex) =>
                             setSelectedMonth(itemValue)
                         }>
-                        <Picker.Item style={{ fontSize: 20, color: "#6200ff" }} label="jan" value="1" />
-                        <Picker.Item style={{ fontSize: 20, color: "#6200ff" }} label="fev" value="2" />
-                        <Picker.Item style={{ fontSize: 20, color: "#6200ff" }} label="abr" value="3" />
-                        <Picker.Item style={{ fontSize: 20, color: "#6200ff" }} label="mar" value="4" />
-                        <Picker.Item style={{ fontSize: 20, color: "#6200ff" }} label="mai" value="5" />
-                        <Picker.Item style={{ fontSize: 20, color: "#6200ff" }} label="jun" value="6" />
-                        <Picker.Item style={{ fontSize: 20, color: "#6200ff" }} label="jul" value="7" />
-                        <Picker.Item style={{ fontSize: 20, color: "#6200ff" }} label="ago" value="8" />
-                        <Picker.Item style={{ fontSize: 20, color: "#6200ff" }} label="set" value="9" />
+                        <Picker.Item style={{ fontSize: 20, color: "#6200ff" }} label="mês" value="null" />
+                        <Picker.Item style={{ fontSize: 20, color: "#6200ff" }} label="jan" value="01" />
+                        <Picker.Item style={{ fontSize: 20, color: "#6200ff" }} label="fev" value="02" />
+                        <Picker.Item style={{ fontSize: 20, color: "#6200ff" }} label="abr" value="03" />
+                        <Picker.Item style={{ fontSize: 20, color: "#6200ff" }} label="mar" value="04" />
+                        <Picker.Item style={{ fontSize: 20, color: "#6200ff" }} label="mai" value="05" />
+                        <Picker.Item style={{ fontSize: 20, color: "#6200ff" }} label="jun" value="06" />
+                        <Picker.Item style={{ fontSize: 20, color: "#6200ff" }} label="jul" value="07" />
+                        <Picker.Item style={{ fontSize: 20, color: "#6200ff" }} label="ago" value="08" />
+                        <Picker.Item style={{ fontSize: 20, color: "#6200ff" }} label="set" value="09" />
                         <Picker.Item style={{ fontSize: 20, color: "#6200ff" }} label="out" value="10" />
                         <Picker.Item style={{ fontSize: 20, color: "#6200ff" }} label="nov" value="11" />
                         <Picker.Item style={{ fontSize: 20, color: "#6200ff" }} label="dez" value="12" />
                     </Picker>
                 </View>
             </View>
-
-            {contentSalvos && Array.isArray(contentSalvos) && contentSalvos.length === 0 ? (
+            {filteredContent.length === 0 ? (
                 <>
                     <FontAwesomeIcon icon={faSuitcaseMedical} size={30} color="#808080" />
                     <Text style={{ fontSize: 16, marginTop: 10 }}>Nenhum medicamento cadastrado ainda.</Text>
                 </>
             ) : (
-                contentSalvos?.map((med, index) => (
+                filteredContent.map((item, index) => (
                     <View key={index} style={styles.containerContent} >
-                        {med.imagem && (
+                        {item.imagem && (
                             <>
                                 <TouchableOpacity
                                     onPress={() => {
-                                        setModaImage(med.imagem)
+                                        setModaImage(item.imagem)
                                         openModal()
                                     }}>
-                                    <Image source={{ uri: med.imagem }} style={{ width: '100%', height: 200, borderRadius: 5 }} />
+                                    <Image source={{ uri: item.imagem }} style={{ width: '100%', height: 200, borderRadius: 5 }} />
                                 </TouchableOpacity>
                                 <Modal visible={modalVisible} transparent={true} onRequestClose={closeModal}>
                                     <View style={{ height: height, flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.8)' }}>
                                         <TouchableOpacity style={{ position: 'absolute', top: 20, right: 20, padding: 10, borderRadius: 100 }} onPress={closeModal}>
                                             <FontAwesomeIcon icon={faXmark} size={30} color='#fff' />
                                         </TouchableOpacity>
-                                        <Image source={{ uri: modaImage || undefined }} style={{ width: '95%', height: 300, borderRadius: 5 }} />
+                                        <Image source={{ uri: modaImage || undefined }} style={{ width: '100%', height: '80%', borderRadius: 5, resizeMode: 'contain' }} />
+
                                     </View>
-                                </Modal></>)}
-                        <Text style={{ fontSize: 25, fontWeight: '500', color: "#444444" }}>{med.nome}</Text>
-                        <Text style={{ fontSize: 17, fontWeight: '300', color: "#444444" }}>{med.funcao}</Text>
-                        <Text style={{ fontSize: 15, marginTop: 10, letterSpacing: -1, fontWeight: '300', color: "#44444475" }}>{med.date}</Text>
+                                </Modal>
+                            </>
+                        )}
+                        <Text style={{ fontSize: 25, fontWeight: '500', color: "#444444" }}>{item.nome}</Text>
+                        <Text style={{ fontSize: 17, fontWeight: '300', color: "#444444" }}>{item.funcao}</Text>
+                        <Text style={{ fontSize: 15, marginTop: 10, letterSpacing: -1, fontWeight: '300', color: "#44444475" }}>{item.date}</Text>
                         <View style={{ flexDirection: 'row', position: 'absolute', bottom: 10, right: 10, gap: 10 }}>
-                            <TouchableOpacity onPress={() => handleEdit(med)}>
+                            <TouchableOpacity onPress={() => handleEdit(item)}>
                                 <FontAwesomeIcon icon={faPenToSquare} size={30} color='#1d1d1dcc' />
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={() => handleExcluirMedicamento(med.id)}>
+                            <TouchableOpacity onPress={() => handleExcluirMedicamento(item.id)}>
                                 <FontAwesomeIcon icon={faTrashCan} size={30} color='#6200ff' />
                             </TouchableOpacity>
                         </View>
@@ -119,7 +138,6 @@ export const RenderData: React.FC<RenderDataProps> = ({
                 ))
             )}
         </View>
-
     );
 }
 
