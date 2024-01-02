@@ -1,35 +1,30 @@
-import React, { useState } from 'react';
-import { Image, View, Text, TouchableOpacity, StyleSheet, Dimensions, TextInput, Modal } from 'react-native';
+import React, { useContext, useEffect, useState } from 'react';
+import { BackHandler, Image, View, Text, TouchableOpacity, StyleSheet, Dimensions, TextInput, Modal, Platform } from 'react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faCamera, faXmark, faArrowLeft, faStarOfLife, faPenToSquare, faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import { Picker } from '@react-native-picker/picker';
 import { Medicamento } from '../../interfaces/IMedicamentos';
+import { ContentContext, ContentContextProps } from '../../context/formContext';
+import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 
-interface RenderDataProps {
-    contentSalvos: Medicamento[];
-    setModaImage: React.Dispatch<React.SetStateAction<string | null>>;
-    openModal: () => void;
-    onPress: () => void;
-    modalVisible: boolean;
-    closeModal: () => void;
-    modaImage: string | null;
-    handleEdit: (data: Medicamento) => void;
-    handleExcluirMedicamento: (id: string) => void;
-}
 
-export const RenderData: React.FC<RenderDataProps> = ({
-    contentSalvos,
-    setModaImage,
-    openModal,
-    onPress,
-    modalVisible,
-    closeModal,
-    modaImage,
-    handleEdit,
-    handleExcluirMedicamento,
-}) => {
+export const RenderData: React.FC = () => {
+
+    const {
+        contentSalvos,
+        modalVisible,
+        modaImage,
+        setModaImage,
+        openModal,
+        closeModal,
+        handleEdit,
+        handleExcluirMedicamento,
+    } = useContext<ContentContextProps | any>(ContentContext);
+
+    const navigation = useNavigation()
+
     const [selectedMonth, setSelectedMonth] = useState<string>('null');
     const [searchText, setSearchText] = useState<string>('');
 
@@ -39,16 +34,32 @@ export const RenderData: React.FC<RenderDataProps> = ({
 
     const filteredContent =
         selectedMonth === 'null'
-            ? contentSalvos.filter(item => item.nome.toLowerCase().includes(searchText.toLowerCase()))
-            : contentSalvos.filter(item =>
+            ? contentSalvos.filter((item: any) => item.nome.toLowerCase().includes(searchText.toLowerCase()))
+            : contentSalvos.filter((item: any) =>
                 item.nome.toLowerCase().includes(searchText.toLowerCase()) &&
                 item.date.slice(3, 5) === selectedMonth
             );
 
+    useEffect(() => {
+        const backHandler = BackHandler.addEventListener(
+            'hardwareBackPress',
+            () => {
+                if (modalVisible) {
+                    closeModal();
+                    return true;
+                }
+                return false;
+            }
+        );
+
+        return () => backHandler.remove();
+    }, [modalVisible, closeModal]);
+
+
     return (
         <View style={{ paddingHorizontal: 10 }}>
             <View style={{ height: 100, width: width, display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 10, marginBottom: 30 }}>
-                <TouchableOpacity onPress={onPress} style={{ width: 50, height: 50, }} >
+                <TouchableOpacity onPress={() => navigation.navigate('Home' as never)} style={{ width: 50, height: 50, }} >
                     <FontAwesomeIcon icon={faArrowLeft} size={40} color='#1d1d1dcc' />
                 </TouchableOpacity>
                 <View style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: 50, height: 50, padding: 8, borderRadius: 100 }}>
@@ -101,16 +112,16 @@ export const RenderData: React.FC<RenderDataProps> = ({
                     <Text style={{ fontSize: 30, marginTop: 10, textAlign: 'center', color: '#666666', fontWeight: '500' }}>Nenhum medicamento cadastrado ainda.</Text>
                 </View>
             ) : (
-                filteredContent.map((item, index) => (
-                    <View key={index} style={styles.containerContent} >
+                filteredContent.map((item: any, index: any) => (
+                    <View key={index} style={styles.containerContent}>
                         {item.imagem && (
                             <>
                                 <TouchableOpacity
                                     onPress={() => {
-                                        setModaImage(item.imagem)
-                                        openModal()
+                                        setModaImage(item.imagem);
+                                        openModal();
                                     }}>
-                                    <Image source={{ uri: item.imagem }} style={{ width: '100%', height: 200, borderRadius: 5 }} />
+                                    <Image source={{ uri: item.imagem }} style={{ width: '100%', height: 260, borderRadius: 5 }} />
                                 </TouchableOpacity>
                                 <Modal visible={modalVisible} transparent={true} onRequestClose={closeModal}>
                                     <View style={{ height: height, flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.8)' }}>

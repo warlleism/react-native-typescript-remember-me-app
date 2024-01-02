@@ -9,7 +9,7 @@
     "splash": {
       "image": "./assets/snap.png",
       "resizeMode": "cover",
-      "backgroundColor": "transparent"
+      "backgroundColor": "#fff"
     },
     "plugins": [
       [
